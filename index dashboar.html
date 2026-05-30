@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Académico — Emi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap');
+  :root {
+    --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:#2a2a3a;
+    --accent:#7c6af7;--accent2:#f7c26a;--accent3:#6af7c2;
+    --text:#e8e8f0;--text-dim:#6b6b80;--danger:#f76a6a;--success:#6af7a0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;padding:32px 24px;
+    background-image:radial-gradient(ellipse at 20% 0%,rgba(124,106,247,.08) 0%,transparent 60%),
+                     radial-gradient(ellipse at 80% 100%,rgba(106,247,194,.05) 0%,transparent 60%);}
+  header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;border-bottom:1px solid var(--border);padding-bottom:24px;}
+  .header-left h1{font-size:28px;font-weight:800;letter-spacing:-.5px;}
+  .header-left h1 span{color:var(--accent);}
+  .header-left p{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);margin-top:4px;letter-spacing:.5px;}
+  .header-right{display:flex;align-items:center;gap:12px;}
+  .year-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent2);letter-spacing:1px;}
+  .sync-status{font-family:'DM Mono',monospace;font-size:10px;padding:6px 12px;border-radius:20px;letter-spacing:.5px;}
+  .sync-status.ok{background:rgba(106,247,160,.1);color:var(--success);}
+  .sync-status.saving{background:rgba(247,194,106,.1);color:var(--accent2);}
+  .sync-status.error{background:rgba(247,106,106,.1);color:var(--danger);}
+
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:border-color .2s;}
+  .stat-card:hover{border-color:var(--accent);}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-line,var(--accent));}
+  .stat-card .label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+  .stat-card .value{font-size:36px;font-weight:800;color:var(--accent-color,var(--accent));line-height:1;}
+  .stat-card .sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:6px;}
+
+  .main-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;margin-bottom:24px;}
+  .section-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .cuatri-container{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;}
+  .cuatri-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--bg);border-radius:8px;padding:4px;flex-wrap:wrap;}
+  .tab-btn{flex:1;min-width:80px;padding:8px 6px;border:none;background:transparent;color:var(--text-dim);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .2s;letter-spacing:.3px;}
+  .tab-btn.active{background:var(--surface2);color:var(--accent);border:1px solid var(--border);}
+  .tab-btn:hover:not(.active){color:var(--text);}
+
+  .materias-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .materia-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;transition:all .2s;}
+  .materia-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .materia-card.aprobada{border-color:rgba(106,247,160,.3);background:rgba(106,247,160,.04);}
+  .materia-card.cursando{border-color:rgba(124,106,247,.4);background:rgba(124,106,247,.06);}
+  .materia-card.pendiente{opacity:.7;}
+  .materia-name{font-size:12px;font-weight:700;margin-bottom:10px;line-height:1.3;}
+  .materia-meta{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;}
+  .status-sel{background:transparent;border:none;cursor:pointer;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;outline:none;padding:3px 6px;border-radius:20px;}
+  .status-sel.aprobada{background:rgba(106,247,160,.15);color:var(--success);}
+  .status-sel.cursando{background:rgba(124,106,247,.2);color:var(--accent);}
+  .status-sel.pendiente{background:rgba(107,107,128,.2);color:var(--text-dim);}
+  .nota-input{width:44px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--accent2);font-family:'DM Mono',monospace;font-size:12px;text-align:center;padding:4px;outline:none;transition:border-color .2s;}
+  .nota-input:focus{border-color:var(--accent2);}
+  .nota-input::placeholder{color:var(--text-dim);font-size:9px;}
+
+  .materia-bottom{margin-top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .dif-stars{display:flex;gap:2px;}
+  .star{font-size:12px;cursor:pointer;transition:transform .1s;user-select:none;line-height:1;}
+  .star:hover{transform:scale(1.2);}
+  .star.on{filter:none;}
+  .star.off{filter:grayscale(1);opacity:.35;}
+  .dif-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.5px;}
+  .feedback-input{flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;padding:4px 8px;outline:none;transition:border-color .2s;}
+  .feedback-input:focus{border-color:var(--accent);}
+  .feedback-input::placeholder{color:var(--text-dim);}
+
+  .sidebar{display:flex;flex-direction:column;gap:16px;}
+  .progress-card,.prom-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+  .progress-ring-container{display:flex;justify-content:center;margin:16px 0;position:relative;}
+  .ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+  .ring-pct{font-size:28px;font-weight:800;color:var(--accent);display:block;}
+  .ring-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;}
+  svg.ring{transform:rotate(-90deg);}
+  .ring-track{fill:none;stroke:var(--border);stroke-width:8;}
+  .ring-fill{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .6s ease;}
+  .progress-details{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+  .prog-item{background:var(--surface2);border-radius:8px;padding:10px;text-align:center;}
+  .prog-item .pi-val{font-size:20px;font-weight:800;color:var(--accent2);}
+  .prog-item .pi-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.5px;margin-top:2px;}
+  .prom-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .prom-bar-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prom-bar-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+  .prom-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width .5s ease;}
+  .prom-bar-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);width:20px;text-align:right;}
+
+  .bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .parciales-card,.notas-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;}
+  .parcial-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .parcial-item:last-child{border-bottom:none;}
+  .parcial-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .parcial-dot.proximo{background:var(--accent2);box-shadow:0 0 8px rgba(247,194,106,.6);}
+  .parcial-dot.pendiente{background:var(--text-dim);}
+  .parcial-info{flex:1;}
+  .parcial-materia{font-size:13px;font-weight:600;}
+  .parcial-fecha{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px;}
+  .parcial-tipo{font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;border-radius:20px;letter-spacing:.5px;}
+  .parcial-tipo.p1{background:rgba(247,194,106,.15);color:var(--accent2);}
+
+  .nota-quick{display:flex;gap:8px;margin-bottom:12px;}
+  .nota-quick input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:8px 12px;outline:none;transition:border-color .2s;}
+  .nota-quick input:focus{border-color:var(--accent);}
+  .btn-add{background:var(--accent);border:none;border-radius:8px;color:white;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
+  .btn-add:hover{opacity:.85;}
+  .notas-list{max-height:180px;overflow-y:auto;}
+  .nota-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
+  .nota-item:last-child{border-bottom:none;}
+  .nota-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px;white-space:nowrap;}
+  .nota-text{flex:1;line-height:1.4;}
+  .btn-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 4px;transition:color .2s;}
+  .btn-del:hover{color:var(--danger);}
+
+  /* LOGIN */
+  .login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:20px;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;max-width:400px;width:100%;text-align:center;}
+  .login-box h2{font-size:22px;font-weight:800;margin-bottom:8px;}
+  .login-box p{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-bottom:24px;}
+  .btn-google{background:white;color:#333;border:none;border-radius:8px;padding:12px 24px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px;margin:0 auto;transition:opacity .2s;}
+  .btn-google:hover{opacity:.9;}
+  .btn-google svg{width:20px;height:20px;}
+
+  .cuatri-panel{display:none;}
+  .cuatri-panel.active{display:block;}
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .stat-card,.cuatri-container,.sidebar>*,.bottom-row>*{animation:fadeIn .4s ease forwards;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <h2>Dashboard <span style="color:var(--accent)">Académico</span></h2>
+    <p>INICIÁ SESIÓN CON TU CUENTA GOOGLE PARA SINCRONIZAR TUS DATOS</p>
+    <button class="btn-google" onclick="signInGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continuar con Google
+    </button>
+  </div>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1>Dashboard <span>Académico</span></h1>
+    <p>LIC. ADMINISTRACIÓN DE NEGOCIOS · PLAN RM.278/2015</p>
+  </div>
+  <div class="header-right">
+    <span class="sync-status ok" id="sync-status">● SINCRONIZADO</span>
+    <div class="year-badge">2° AÑO · 2025</div>
+  </div>
+</header>
+
+<div class="stats-row">
+  <div class="stat-card" style="--accent-line:var(--success);--accent-color:var(--success)">
+    <div class="label">Materias Aprobadas</div>
+    <div class="value" id="stat-aprobadas">0</div>
+    <div class="sub">de 40 totales</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Cursando Ahora</div>
+    <div class="value" id="stat-cursando">0</div>
+    <div class="sub">materias activas</div>
+  </div>
+  <div class="stat-card" style="--accent-line:var(--accent2);--accent-color:var(--accent2)">
+    <div class="label">Promedio General</div>
+    <div class="value" id="stat-promedio">—</div>
+    <div class="sub">sobre 10</div>
+  </div>
+  <div class="stat-card" style="--accent-line:var(--accent3);--accent-color:var(--accent3)">
+    <div class="label">Ritmo Objetivo</div>
+    <div class="value">4</div>
+    <div class="sub">materias por cuatri</div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="cuatri-container">
+    <div class="section-title">Materias por año y cuatrimestre</div>
+    <div class="cuatri-tabs">
+      <button class="tab-btn active" onclick="showCuatri(0)">1° Año C1</button>
+      <button class="tab-btn" onclick="showCuatri(1)">1° Año C2</button>
+      <button class="tab-btn" onclick="showCuatri(2)">2° Año C1</button>
+      <button class="tab-btn" onclick="showCuatri(3)">2° Año C2 ★</button>
+      <button class="tab-btn" onclick="showCuatri(4)">3° Año C1</button>
+      <button class="tab-btn" onclick="showCuatri(5)">3° Año C2</button>
+      <button class="tab-btn" onclick="showCuatri(6)">4° Año →</button>
+    </div>
+    <div class="cuatri-panel active" id="panel-0"><div class="materias-grid" id="grid-0"></div></div>
+    <div class="cuatri-panel" id="panel-1"><div class="materias-grid" id="grid-1"></div></div>
+    <div class="cuatri-panel" id="panel-2"><div class="materias-grid" id="grid-2"></div></div>
+    <div class="cuatri-panel" id="panel-3"><div class="materias-grid" id="grid-3"></div></div>
+    <div class="cuatri-panel" id="panel-4"><div class="materias-grid" id="grid-4"></div></div>
+    <div class="cuatri-panel" id="panel-5"><div class="materias-grid" id="grid-5"></div></div>
+    <div class="cuatri-panel" id="panel-6"><div class="materias-grid" id="grid-6"></div></div>
+  </div>
+  <div class="sidebar">
+    <div class="progress-card">
+      <div class="section-title">Progreso carrera</div>
+      <div class="progress-ring-container">
+        <svg class="ring" width="120" height="120" viewBox="0 0 120 120">
+          <circle class="ring-track" cx="60" cy="60" r="52"/>
+          <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+        </svg>
+        <div class="ring-label">
+          <span class="ring-pct" id="ring-pct">0%</span>
+          <span class="ring-sub">completado</span>
+        </div>
+      </div>
+      <div class="progress-details">
+        <div class="prog-item"><div class="pi-val" id="prog-aprobadas">0</div><div class="pi-label">Aprobadas</div></div>
+        <div class="prog-item"><div class="pi-val" id="prog-restantes">40</div><div class="pi-label">Restantes</div></div>
+      </div>
+    </div>
+    <div class="prom-card">
+      <div class="section-title">Notas registradas</div>
+      <div id="prom-bars"><p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);text-align:center;padding:12px 0">Ingresá notas en las materias aprobadas</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-row">
+  <div class="parciales-card">
+    <div class="section-title">Parciales y fechas</div>
+    <div id="parciales-list">
+      <div class="parcial-item"><div class="parcial-dot proximo"></div><div class="parcial-info"><div class="parcial-materia">Álgebra</div><div class="parcial-fecha">Sin fecha cargada</div></div><span class="parcial-tipo p1">1° PARCIAL</span></div>
+      <div class="parcial-item"><div class="parcial-dot proximo"></div><div class="parcial-info"><div class="parcial-materia">Comercialización</div><div class="parcial-fecha">Sin fecha cargada</div></div><span class="parcial-tipo p1">1° PARCIAL</span></div>
+      <div class="parcial-item"><div class="parcial-dot pendiente"></div><div class="parcial-info"><div class="parcial-materia">Sistemas Contables</div><div class="parcial-fecha">Sin fecha cargada</div></div><span class="parcial-tipo p1">1° PARCIAL</span></div>
+      <div class="parcial-item"><div class="parcial-dot pendiente"></div><div class="parcial-info"><div class="parcial-materia">Plan. y Gestión Prod.</div><div class="parcial-fecha">Sin fecha cargada</div></div><span class="parcial-tipo p1">1° PARCIAL</span></div>
+    </div>
+  </div>
+  <div class="notas-card">
+    <div class="section-title">Notas rápidas</div>
+    <div class="nota-quick">
+      <input type="text" id="nota-input" placeholder="Escribí una nota..."/>
+      <button class="btn-add" onclick="addNota()">+ Agregar</button>
+    </div>
+    <div class="notas-list" id="notas-list"></div>
+  </div>
+</div>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const FILE_ID = '1xzDT_CTSQT043eL3tYyyMNVZBqDuFQdV';
+const TOTAL = 40;
+const CLIENT_ID = ''; // No necesario para leer con token de usuario
+let accessToken = null;
+let saveTimeout = null;
+
+const plan = {
+  0:{label:"1° Año · 1° Cuatrimestre",materias:["Administración General","Álgebra","Sistemas Contables","Microeconomía","Derecho Constitucional"]},
+  1:{label:"1° Año · 2° Cuatrimestre",materias:["Administración Empresarial","Análisis Matemático","Derecho Adm/Civil/Comercial","Macroeconomía","El Hombre y el Mundo"]},
+  2:{label:"2° Año · 1° Cuatrimestre",materias:["Estadística Aplicada","Gestión Contable","Comercialización","Planeamiento y Gestión de la Producción","Perspectivas y Visión de la Persona"]},
+  3:{label:"2° Año · 2° Cuatrimestre ★ ACTUAL",materias:["Matemática Financiera","Sistemas Administrativos Informáticos","Gestión de Personas y RRPP","Contabilidad Gerencial","El Actuar Humano"]},
+  4:{label:"3° Año · 1° Cuatrimestre",materias:["Introducción a la Dirección Financiera","Administración Estratégica","Metodología de Investigación","Planeamiento LP y Factibilidad","Problemática Social"]},
+  5:{label:"3° Año · 2° Cuatrimestre",materias:["Dirección Financiera Empresarial","Régimen Fiscal","Costos para Decisiones","Seminario I","Ética Profesional"]},
+  6:{label:"4° Año",materias:["Dirección General y Calidad de Gestión","Control de Gestión","Estudio de Casos","Práctica Profesional Supervisada","Electiva I","Electiva II","Electiva III","Política Económica Internacional","Teoría de la Decisión","Proyecto Final"]}
+};
+
+const DIF_LABELS = ["","Fácil","Normal","Difícil","Muy difícil","Brutal"];
+const DIF_COLORS = ["","var(--success)","var(--accent3)","var(--accent2)","var(--danger)","#ff4040"];
+
+let state = {notas:[{text:"Bienvenido a tu dashboard académico 🎓",date:"hoy"}],materias:{}};
+
+// ---- AUTH ----
+function signInGoogle(){
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: '821050867078-aa5hq9naspavvllm7veustsn2ha4ntec.apps.googleusercontent.com',
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback:(resp)=>{
+      if(resp.access_token){
+        accessToken = resp.access_token;
+        document.getElementById('login-overlay').style.display='none';
+        loadFromDrive();
+      }
+    }
+  });
+  client.requestAccessToken();
+}
+
+// ---- DRIVE ----
+async function loadFromDrive(){
+  setSyncStatus('saving','● CARGANDO...');
+  try{
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${FILE_ID}?alt=media`,{
+      headers:{Authorization:`Bearer ${accessToken}`}
+    });
+    if(r.ok){
+      const data = await r.json();
+      if(data && data.materias) state = data;
+    }
+  }catch(e){ console.warn('Load error',e); }
+  init();
+  setSyncStatus('ok','● SINCRONIZADO');
+}
+
+async function saveToDrive(){
+  if(!accessToken) return;
+  setSyncStatus('saving','● GUARDANDO...');
+  try{
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${FILE_ID}?uploadType=media`,{
+      method:'PATCH',
+      headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+      body: JSON.stringify(state)
+    });
+    setSyncStatus('ok','● SINCRONIZADO');
+  }catch(e){
+    setSyncStatus('error','● ERROR AL GUARDAR');
+  }
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveToDrive, 1500);
+}
+
+function setSyncStatus(cls, text){
+  const el = document.getElementById('sync-status');
+  el.className = `sync-status ${cls}`;
+  el.textContent = text;
+}
+
+// ---- RENDER ----
+function getMKey(c,i){return `${c}_${i}`;}
+function getMS(c,i){
+  const k=getMKey(c,i);
+  if(!state.materias[k]) state.materias[k]={status:c===3?'cursando':'pendiente',nota:null,dif:0,feedback:''};
+  if(state.materias[k].dif===undefined) state.materias[k].dif=0;
+  if(state.materias[k].feedback===undefined) state.materias[k].feedback='';
+  return state.materias[k];
+}
+
+function renderGrid(c){
+  const grid=document.getElementById(`grid-${c}`);
+  if(!grid) return;
+  grid.innerHTML='';
+  plan[c].materias.forEach((mat,i)=>{
+    const ms=getMS(c,i);
+    const card=document.createElement('div');
+    card.className=`materia-card ${ms.status}`;
+    let stars='';
+    for(let s=1;s<=5;s++) stars+=`<span class="star ${s<=ms.dif?'on':'off'}" onclick="setDif(${c},${i},${s})" title="${DIF_LABELS[s]}">★</span>`;
+    const difLabel=ms.dif>0
+      ?`<span style="font-family:'DM Mono',monospace;font-size:9px;color:${DIF_COLORS[ms.dif]};letter-spacing:.5px">${DIF_LABELS[ms.dif]}</span>`
+      :`<span class="dif-label">dificultad</span>`;
+    card.innerHTML=`
+      <div class="materia-name">${mat}</div>
+      <div class="materia-meta">
+        <select class="status-sel ${ms.status}" onchange="changeStatus(${c},${i},this)">
+          <option value="pendiente" ${ms.status==='pendiente'?'selected':''}>PENDIENTE</option>
+          <option value="cursando"  ${ms.status==='cursando'?'selected':''}>CURSANDO</option>
+          <option value="aprobada"  ${ms.status==='aprobada'?'selected':''}>APROBADA</option>
+        </select>
+        <input class="nota-input" type="number" min="1" max="10" placeholder="nota"
+          value="${ms.nota!==null?ms.nota:''}"
+          ${ms.status!=='aprobada'?'disabled style="opacity:.3"':''}
+          onchange="changeNota(${c},${i},this.value)"/>
+      </div>
+      <div class="materia-bottom"><div class="dif-stars">${stars}</div>${difLabel}</div>
+      <div class="materia-bottom" style="margin-top:6px">
+        <input class="feedback-input" type="text" placeholder="¿Qué te costó más?"
+          value="${ms.feedback||''}"
+          onblur="changeFeedback(${c},${i},this.value)"
+          onkeydown="if(event.key==='Enter')this.blur()"/>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function setDif(c,i,val){
+  const k=getMKey(c,i);
+  state.materias[k].dif=(state.materias[k].dif===val)?0:val;
+  scheduleSave(); renderGrid(c);
+}
+function changeStatus(c,i,sel){
+  const k=getMKey(c,i);
+  state.materias[k].status=sel.value;
+  if(sel.value!=='aprobada') state.materias[k].nota=null;
+  scheduleSave(); renderGrid(c); updateStats();
+}
+function changeNota(c,i,val){
+  const k=getMKey(c,i);
+  const n=parseFloat(val);
+  state.materias[k].nota=(n>=1&&n<=10)?n:null;
+  scheduleSave(); updateStats();
+}
+function changeFeedback(c,i,val){
+  state.materias[getMKey(c,i)].feedback=val.trim();
+  scheduleSave();
+}
+
+function showCuatri(idx){
+  document.querySelectorAll('.cuatri-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+}
+
+function updateStats(){
+  let aprobadas=0,cursando=0,notas=[];
+  Object.values(state.materias).forEach(m=>{
+    if(m.status==='aprobada'){aprobadas++;if(m.nota!==null)notas.push(m.nota);}
+    if(m.status==='cursando') cursando++;
+  });
+  const pct=Math.round((aprobadas/TOTAL)*100);
+  const prom=notas.length>0?(notas.reduce((a,b)=>a+b,0)/notas.length).toFixed(1):'—';
+  document.getElementById('stat-aprobadas').textContent=aprobadas;
+  document.getElementById('stat-cursando').textContent=cursando;
+  document.getElementById('stat-promedio').textContent=prom;
+  document.getElementById('ring-pct').textContent=pct+'%';
+  document.getElementById('prog-aprobadas').textContent=aprobadas;
+  document.getElementById('prog-restantes').textContent=TOTAL-aprobadas;
+  document.getElementById('ring-fill').style.strokeDashoffset=326.7-(pct/100)*326.7;
+  renderNotasBars();
+}
+
+function renderNotasBars(){
+  const c=document.getElementById('prom-bars');
+  let items=[];
+  for(let i=0;i<=6;i++) plan[i].materias.forEach((mat,j)=>{
+    const ms=getMS(i,j);
+    if(ms.status==='aprobada'&&ms.nota!==null) items.push({name:mat.length>14?mat.substring(0,14)+'…':mat,nota:ms.nota});
+  });
+  if(!items.length){c.innerHTML='<p style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text-dim);text-align:center;padding:12px 0">Ingresá notas en las materias aprobadas</p>';return;}
+  c.innerHTML=items.map(it=>`<div class="prom-bar-row"><span class="prom-bar-label">${it.name}</span><div class="prom-bar-track"><div class="prom-bar-fill" style="width:${it.nota*10}%"></div></div><span class="prom-bar-val">${it.nota}</span></div>`).join('');
+}
+
+function addNota(){
+  const inp=document.getElementById('nota-input');
+  const text=inp.value.trim();
+  if(!text) return;
+  const today=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+  state.notas.unshift({text,date:today});
+  inp.value=''; scheduleSave(); renderNotas();
+}
+function delNota(idx){state.notas.splice(idx,1);scheduleSave();renderNotas();}
+function renderNotas(){
+  document.getElementById('notas-list').innerHTML=state.notas.map((n,i)=>`
+    <div class="nota-item">
+      <div style="flex:1"><div class="nota-text">${n.text}</div><div class="nota-date">${n.date}</div></div>
+      <button class="btn-del" onclick="delNota(${i})">×</button>
+    </div>`).join('');
+}
+document.getElementById('nota-input').addEventListener('keydown',e=>{if(e.key==='Enter')addNota();});
+
+function init(){
+  for(let i=0;i<=6;i++) renderGrid(i);
+  renderNotas(); updateStats();
+}
+</script>
+</body>
+</html>
